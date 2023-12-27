@@ -309,7 +309,7 @@ func isAntiAffinityViolation(pod1 *v1.Pod, pod2 *v1.Pod) bool {
 }
 
 func IsPodAntiAffinityViolationForNode(nodeIndexer GetPodsAssignedToNodeFunc, pod *v1.Pod, node *v1.Node) bool {
-	pods, err := ListAllPodsOnANode(node.Name, nodeIndexer, nil)
+	pods, err := ListAllPodsOnANode(node.Name, nodeIndexer, func(pod *v1.Pod) bool { return true })
 	if err != nil {
 		klog.V(2).InfoS("Node will not be processed, error accessing its pods", "node", klog.KObj(node), "err", err)
 		return false
