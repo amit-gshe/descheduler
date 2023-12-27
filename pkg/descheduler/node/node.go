@@ -119,6 +119,12 @@ func NodeFit(nodeIndexer podutil.GetPodsAssignedToNodeFunc, pod *v1.Pod, node *v
 	if !ok {
 		errors = append(errors, fmt.Errorf("pod does not tolerate taints on the node"))
 	}
+
+	ok = podutil.IsPodAntiAffinityViolationForNode(nodeIndexer, pod, node)
+	if ok {
+		errors = append(errors, fmt.Errorf("pod does not match PodAntiAffinity on the node"))
+	}
+
 	// Check if the pod can fit on a node based off it's requests
 	if pod.Spec.NodeName == "" || pod.Spec.NodeName != node.Name {
 		if ok, reqErrors := fitsRequest(nodeIndexer, pod, node); !ok {

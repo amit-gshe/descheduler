@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/descheduler/pkg/utils"
 )
@@ -256,4 +257,67 @@ func SortPodsBasedOnAge(pods []*v1.Pod) {
 	sort.Slice(pods, func(i, j int) bool {
 		return pods[i].CreationTimestamp.Before(&pods[j].CreationTimestamp)
 	})
+}
+
+func isAntiAffinityViolation(pod1 *v1.Pod, pod2 *v1.Pod) bool {
+	// 检查 Pod1 的反亲和性规则是否与 Pod2 冲突
+	for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+		selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
+		if err != nil {
+			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+			return false
+		}
+		if selector.Matches(labels.Set(pod2.Labels)) {
+			return true
+		}
+	}
+	for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
+		if err != nil {
+			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+			return false
+		}
+		if selector.Matches(labels.Set(pod2.Labels)) {
+			return true
+		}
+	}
+
+	// 检查 Pod2 的反亲和性规则是否与 Pod1 冲突
+	for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+		selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
+		if err != nil {
+			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+			return false
+		}
+		if selector.Matches(labels.Set(pod1.Labels)) {
+			return true
+		}
+	}
+
+	for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
+		if err != nil {
+			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+			return false
+		}
+		if selector.Matches(labels.Set(pod1.Labels)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func IsPodAntiAffinityViolationForNode(nodeIndexer GetPodsAssignedToNodeFunc, pod *v1.Pod, node *v1.Node) bool {
+	pods, err := ListAllPodsOnANode(node.Name, nodeIndexer, nil)
+	if err != nil {
+		klog.V(2).InfoS("Node will not be processed, error accessing its pods", "node", klog.KObj(node), "err", err)
+		return false
+	}
+	for _, podOnNode := range pods {
+		if isAntiAffinityViolation(pod, podOnNode) {
+			return true
+		}
+	}
+	return false
 }
