@@ -142,12 +142,12 @@ func NodeFit(nodeIndexer podutil.GetPodsAssignedToNodeFunc, pod *v1.Pod, node *v
 // PodFitsAnyOtherNode checks if the given pod will fit any of the given nodes, besides the node
 // the pod is already running on. The predicates used to determine if the pod will fit can be found in the NodeFit function.
 func PodFitsAnyOtherNode(nodeIndexer podutil.GetPodsAssignedToNodeFunc, pod *v1.Pod, nodes []*v1.Node) bool {
+	klog.V(4).InfoS("Check pod fits on nodes", "pod", klog.KObj(pod), "nodes:", klog.KObjSlice(nodes))
 	for _, node := range nodes {
 		// Skip node pod is already on
 		if node.Name == pod.Spec.NodeName {
 			continue
 		}
-
 		errors := NodeFit(nodeIndexer, pod, node)
 		if len(errors) == 0 {
 			klog.V(4).InfoS("Pod fits on node", "pod", klog.KObj(pod), "node", klog.KObj(node))
