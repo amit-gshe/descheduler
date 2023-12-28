@@ -216,6 +216,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				tempNodes := nodes[:0]
 				// 删除不符合反亲和性要求的node
 				for _, node := range tempNodes {
+					klog.V(4).InfoS("Check node if violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
 					if val, ok := node.Labels[tsc.TopologyKey]; ok {
 						if podutil.IsPodAntiAffinityViolationForNode(d.handle.GetPodsAssignedToNodeFunc(), pod, node) {
 							klog.V(4).InfoS("Delete node from topology as it violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
