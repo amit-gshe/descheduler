@@ -216,12 +216,12 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				// 7. add the pod with key as this topoPair
 				constraintTopologies[topoPair] = append(constraintTopologies[topoPair], pod)
 				sumPods++
+				klog.V(4).InfoS("Add pod to constraintTopologies", nodeValue, "pod:", klog.KObj(pod), "sumPods:", sumPods)
 			}
 			if topologyIsBalanced(constraintTopologies, tsc) {
 				klog.V(2).InfoS("Skipping topology constraint because it is already balanced", "constraint", tsc)
 				continue
 			}
-			klog.V(4).InfoS("BalanceDomains tsc:", tsc, "constraintTopologies:", constraintTopologies, "sumPods:", sumPods, "nodes:", nodes)
 			d.balanceDomains(podsForEviction, tsc, constraintTopologies, sumPods, nodes)
 		}
 	}
