@@ -191,6 +191,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 			// 3. for each evictable pod in that namespace
 			// (this loop is where we count the number of pods per topologyValue that match this constraint's selector)
 			var sumPods float64
+			var checkedPodsWithAntiAffinity bool = false
 			for _, pod := range namespacedPods[namespace] {
 				// skip pods that are being deleted.
 				if utils.IsPodTerminating(pod) {
@@ -213,27 +214,32 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				}
 
 				sumPods++
-				tempNodes := make([]*v1.Node, len(nodes))
-				copy(tempNodes, nodes)
-				// 删除不符合反亲和性要求的node
-				klog.V(4).InfoS("Check PodAntiAffinity on nodes", klog.KObj(pod), "on", klog.KObjSlice(nodes), "tempNodes:", klog.KObjSlice(tempNodes))
-				for _, node := range tempNodes {
-					klog.V(4).InfoS("Check node if violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
-					if val, ok := node.Labels[tsc.TopologyKey]; ok {
-						if podutil.IsPodAntiAffinityViolationForNode(d.handle.GetPodsAssignedToNodeFunc(), pod, node) {
-							klog.V(4).InfoS("Delete node from topology as it violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
-							delete(constraintTopologies, topologyPair{key: tsc.TopologyKey, value: val})
-							delete(nodeMap, node.Name)
-							for i, v := range nodes {
-								if v.Name == node.Name {
-									nodes = append(nodes[:i], nodes[i+1:]...)
-									break
+
+				if !checkedPodsWithAntiAffinity {
+					tempNodes := make([]*v1.Node, len(nodes))
+					copy(tempNodes, nodes)
+					// 删除不符合反亲和性要求的node
+					klog.V(4).InfoS("Check PodAntiAffinity on nodes", klog.KObj(pod), "on", klog.KObjSlice(nodes))
+					for _, node := range tempNodes {
+						klog.V(4).InfoS("Check node if violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
+						if val, ok := node.Labels[tsc.TopologyKey]; ok {
+							if podutil.IsPodAntiAffinityViolationForNode(d.handle.GetPodsAssignedToNodeFunc(), pod, node) {
+								klog.V(4).InfoS("Delete node from topology as it violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
+								delete(constraintTopologies, topologyPair{key: tsc.TopologyKey, value: val})
+								delete(nodeMap, node.Name)
+								for i, v := range nodes {
+									if v.Name == node.Name {
+										nodes = append(nodes[:i], nodes[i+1:]...)
+										break
+									}
 								}
+								continue
 							}
-							continue
 						}
 					}
+					checkedPodsWithAntiAffinity = true
 				}
+
 				// 6. create a topoPair with key as this TopologySpreadConstraint
 				topoPair := topologyPair{key: tsc.TopologyKey, value: nodeValue}
 				// 7. add the pod with key as this topoPair
