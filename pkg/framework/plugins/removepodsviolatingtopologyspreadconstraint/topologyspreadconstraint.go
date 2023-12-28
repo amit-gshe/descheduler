@@ -216,7 +216,6 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				// 7. add the pod with key as this topoPair
 				constraintTopologies[topoPair] = append(constraintTopologies[topoPair], pod)
 				sumPods++
-				klog.V(4).InfoS("Add pod to constraintTopologies", nodeValue, "pod:", klog.KObj(pod), "sumPods:", sumPods)
 			}
 			if topologyIsBalanced(constraintTopologies, tsc) {
 				klog.V(2).InfoS("Skipping topology constraint because it is already balanced", "constraint", tsc)
@@ -310,7 +309,8 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) balanceDomains(
 
 	eligibleNodes := filterEligibleNodes(nodes, tsc)
 	nodesBelowIdealAvg := filterNodesBelowIdealAvg(eligibleNodes, sortedDomains, tsc.TopologyKey, idealAvg)
-
+	klog.V(4).InfoS("Balance pods in nodes", klog.KObjSlice(nodes), "sumPods", sumPods, "len(constraintTopologies)", len(constraintTopologies), "tsc.TopologyKey", tsc.TopologyKey, "tsc.MaxSkew", tsc.MaxSkew, "idealAvg", "idealAvg", idealAvg, "nodesBelowIdealAvg", klog.KObjSlice(nodesBelowIdealAvg))
+	klog.V(4).InfoS("eligibleNodes:", klog.KObjSlice(eligibleNodes))
 	// i is the index for belowOrEqualAvg
 	// j is the index for aboveAvg
 	i := 0
