@@ -261,47 +261,53 @@ func SortPodsBasedOnAge(pods []*v1.Pod) {
 
 func isAntiAffinityViolation(pod1 *v1.Pod, pod2 *v1.Pod) bool {
 	// 检查 Pod1 的反亲和性规则是否与 Pod2 冲突
-	for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
-		selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
-		if err != nil {
-			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
-			return false
+	if pod1.Name == pod2.Name {
+		return false
+	}
+	if pod1.Spec.Affinity != nil && pod1.Spec.Affinity.PodAntiAffinity != nil {
+		for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+			selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
+			if err != nil {
+				klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+				return false
+			}
+			if selector.Matches(labels.Set(pod2.Labels)) {
+				return true
+			}
 		}
-		if selector.Matches(labels.Set(pod2.Labels)) {
-			return true
+		for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+			selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
+			if err != nil {
+				klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+				return false
+			}
+			if selector.Matches(labels.Set(pod2.Labels)) {
+				return true
+			}
 		}
 	}
-	for _, rule := range pod1.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
-		selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
-		if err != nil {
-			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
-			return false
+	if pod2.Spec.Affinity != nil && pod2.Spec.Affinity.PodAntiAffinity != nil {
+		// 检查 Pod2 的反亲和性规则是否与 Pod1 冲突
+		for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+			selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
+			if err != nil {
+				klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+				return false
+			}
+			if selector.Matches(labels.Set(pod1.Labels)) {
+				return true
+			}
 		}
-		if selector.Matches(labels.Set(pod2.Labels)) {
-			return true
-		}
-	}
 
-	// 检查 Pod2 的反亲和性规则是否与 Pod1 冲突
-	for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
-		selector, err := metav1.LabelSelectorAsSelector(rule.LabelSelector)
-		if err != nil {
-			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
-			return false
-		}
-		if selector.Matches(labels.Set(pod1.Labels)) {
-			return true
-		}
-	}
-
-	for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
-		selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
-		if err != nil {
-			klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
-			return false
-		}
-		if selector.Matches(labels.Set(pod1.Labels)) {
-			return true
+		for _, rule := range pod2.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+			selector, err := metav1.LabelSelectorAsSelector(rule.PodAffinityTerm.LabelSelector)
+			if err != nil {
+				klog.ErrorS(err, "Unable to convert LabelSelector into Selector")
+				return false
+			}
+			if selector.Matches(labels.Set(pod1.Labels)) {
+				return true
+			}
 		}
 	}
 
