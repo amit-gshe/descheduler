@@ -213,7 +213,8 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				}
 
 				sumPods++
-				tempNodes := nodes[:0]
+				tempNodes := make([]*v1.Node, len(nodes))
+				copy(tempNodes, nodes)
 				// 删除不符合反亲和性要求的node
 				klog.V(4).InfoS("Check PodAntiAffinity on nodes", klog.KObj(pod), "on", klog.KObjSlice(nodes), "tempNodes:", klog.KObjSlice(tempNodes))
 				for _, node := range tempNodes {
