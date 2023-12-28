@@ -211,11 +211,28 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				if !ok {
 					continue
 				}
+
+				sumPods++
+				// 删除不符合反亲和性要求的node
+				for _, node := range nodeMap {
+					if val, ok := node.Labels[tsc.TopologyKey]; ok {
+						if _, ok := constraintTopologies[topologyPair{key: tsc.TopologyKey, value: val}]; ok && podutil.IsPodAntiAffinityViolationForNode(d.handle.GetPodsAssignedToNodeFunc(), pod, node) {
+							delete(constraintTopologies, topologyPair{key: tsc.TopologyKey, value: val})
+							nodes = append(nodes, node)
+							for i, v := range nodes {
+								if v.Name == node.Name {
+									nodes = append(nodes[:i], nodes[i+1:]...)
+									break
+								}
+							}
+							continue
+						}
+					}
+				}
 				// 6. create a topoPair with key as this TopologySpreadConstraint
 				topoPair := topologyPair{key: tsc.TopologyKey, value: nodeValue}
 				// 7. add the pod with key as this topoPair
 				constraintTopologies[topoPair] = append(constraintTopologies[topoPair], pod)
-				sumPods++
 			}
 			if topologyIsBalanced(constraintTopologies, tsc) {
 				klog.V(2).InfoS("Skipping topology constraint because it is already balanced", "constraint", tsc)
