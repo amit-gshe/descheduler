@@ -174,9 +174,16 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 		if len(namespaceTopologySpreadConstraints) == 0 {
 			continue
 		}
-
+		originalNodes := make([]*v1.Node, len(nodes))
+		copy(originalNodes, nodes)
 		// 2. for each topologySpreadConstraint in that namespace
 		for _, tsc := range namespaceTopologySpreadConstraints {
+			nodes := make([]*v1.Node, len(originalNodes))
+			nodeMap := make(map[string]*v1.Node, len(nodes))
+			for _, node := range nodes {
+				nodeMap[node.Name] = node
+			}
+
 			constraintTopologies := make(map[topologyPair][]*v1.Pod)
 			// pre-populate the topologyPair map with all the topologies available from the nodeMap
 			// (we can't just build it from existing pods' nodes because a topology may have 0 pods)
