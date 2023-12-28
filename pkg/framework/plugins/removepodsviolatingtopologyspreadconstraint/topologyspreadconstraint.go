@@ -221,6 +221,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 				klog.V(2).InfoS("Skipping topology constraint because it is already balanced", "constraint", tsc)
 				continue
 			}
+			klog.V(4).InfoS("BalanceDomains tsc:", tsc, "constraintTopologies:", constraintTopologies, "sumPods:", sumPods, "nodes:", nodes)
 			d.balanceDomains(podsForEviction, tsc, constraintTopologies, sumPods, nodes)
 		}
 	}
@@ -489,6 +490,21 @@ func matchNodeInclusionPolicies(tsc topologySpreadConstraint, node *v1.Node) boo
 		}
 	}
 	return true
+}
+
+func (d *RemovePodsViolatingTopologySpreadConstraint) matchPodAntiAffinityOnNode(tsc topologySpreadConstraint, node *v1.Node) bool {
+	tsc.Selector.Matches(labels.Set(node.Labels))
+	pods, err := podutil.ListPodsOnANode(node.Name, d.handle.GetPodsAssignedToNodeFunc(), d.podFilter)
+	if err != nil {
+		klog.ErrorS(err, "error listing all pods")
+		return false
+	}
+	for _, pod := range pods {
+		if tsc.Selector.Matches(labels.Set(pod.Labels)) {
+			return true
+		}
+	}
+	return false
 }
 
 // inspired by Scheduler: https://github.com/kubernetes/kubernetes/blob/release-1.28/pkg/scheduler/framework/plugins/podtopologyspread/common.go#L90
