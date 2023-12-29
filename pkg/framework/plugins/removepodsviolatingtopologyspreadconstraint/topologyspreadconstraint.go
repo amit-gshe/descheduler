@@ -199,7 +199,9 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 			// 3. for each evictable pod in that namespace
 			// (this loop is where we count the number of pods per topologyValue that match this constraint's selector)
 			var sumPods float64
-			var checkedPodsWithAntiAffinity bool = false
+			checkedPodsWithAntiAffinity := false
+			klog.V(4).InfoS("Processing pods for topology spread constraints", "namespace", namespace, "topologyKey", tsc.TopologyKey)
+			klog.V(4).InfoS("Processing pods for topology spread constraints", "pods", namespacedPods[namespace])
 			for _, pod := range namespacedPods[namespace] {
 				// skip pods that are being deleted.
 				if utils.IsPodTerminating(pod) {
