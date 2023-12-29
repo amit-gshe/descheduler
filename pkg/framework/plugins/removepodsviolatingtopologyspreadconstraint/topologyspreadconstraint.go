@@ -201,7 +201,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 			var sumPods float64
 			checkedPodsWithAntiAffinity := false
 			klog.V(4).InfoS("Processing pods for topology spread constraints", "namespace", namespace, "topologyKey", tsc.TopologyKey)
-			klog.V(4).InfoS("Processing pods for topology spread constraints", "pods", namespacedPods[namespace])
+			klog.V(4).InfoS("Processing pods for topology spread constraints", "pods", klog.KObjSlice(namespacedPods[namespace]))
 			for _, pod := range namespacedPods[namespace] {
 				// skip pods that are being deleted.
 				if utils.IsPodTerminating(pod) {
