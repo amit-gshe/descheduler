@@ -424,7 +424,7 @@ func filterNodesBelowIdealAvg(nodes []*v1.Node, sortedDomains []topology, topolo
 
 	var nodesBelowIdealAvg []*v1.Node
 	for _, domain := range sortedDomains {
-		if float64(len(domain.pods)) < idealAvg {
+		if float64(len(domain.pods)) < math.Floor(idealAvg) {
 			nodesBelowIdealAvg = append(nodesBelowIdealAvg, topologyNodesMap[domain.pair.value]...)
 		}
 	}
