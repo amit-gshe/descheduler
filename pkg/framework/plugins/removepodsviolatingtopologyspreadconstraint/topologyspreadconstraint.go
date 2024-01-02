@@ -200,8 +200,6 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 			// (this loop is where we count the number of pods per topologyValue that match this constraint's selector)
 			var sumPods float64
 			checkedPodsWithAntiAffinity := false
-			klog.V(4).InfoS("Processing pods for topology spread constraints", "namespace", namespace, "topologyKey", tsc.TopologyKey)
-			klog.V(4).InfoS("Processing pods for topology spread constraints", "pods", klog.KObjSlice(namespacedPods[namespace]))
 			for _, pod := range namespacedPods[namespace] {
 				// skip pods that are being deleted.
 				if utils.IsPodTerminating(pod) {
@@ -231,7 +229,6 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) Balance(ctx context.Contex
 					// 删除不符合反亲和性要求的node
 					klog.V(4).InfoS("Check PodAntiAffinity on nodes", klog.KObj(pod), "on", klog.KObjSlice(nodes))
 					for _, node := range tempNodes {
-						klog.V(4).InfoS("Check node if violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
 						if val, ok := node.Labels[tsc.TopologyKey]; ok {
 							if podutil.IsPodAntiAffinityViolationForNode(d.handle.GetPodsAssignedToNodeFunc(), pod, node) {
 								klog.V(4).InfoS("Delete node from topology as it violates PodAntiAffinity", klog.KObj(pod), "on", klog.KObj(node))
