@@ -379,7 +379,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) balanceDomains(
 		smallestDiff := math.Min(aboveAvg, belowAvg)
 		halfSkew := math.Ceil((skew - float64(tsc.MaxSkew)) / 2)
 		movePods := int(math.Min(smallestDiff, halfSkew))
-		klog.V(4).Info("aboveAvg", aboveAvg, "belowAvg", belowAvg, "smallestDiff", smallestDiff, "halfSkew", halfSkew, "movePods", movePods)
+		klog.V(4).InfoS("aboveAvg", aboveAvg, "belowAvg", belowAvg, "smallestDiff", smallestDiff, "halfSkew", halfSkew, "movePods", movePods)
 		if movePods <= 0 {
 			i++
 			continue
