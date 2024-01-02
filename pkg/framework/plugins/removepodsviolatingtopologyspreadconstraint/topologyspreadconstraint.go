@@ -379,6 +379,7 @@ func (d *RemovePodsViolatingTopologySpreadConstraint) balanceDomains(
 		smallestDiff := math.Min(aboveAvg, belowAvg)
 		halfSkew := math.Ceil((skew - float64(tsc.MaxSkew)) / 2)
 		movePods := int(math.Min(smallestDiff, halfSkew))
+		klog.V(4).Info("aboveAvg", aboveAvg, "belowAvg", belowAvg, "smallestDiff", smallestDiff, "halfSkew", halfSkew, "movePods", movePods)
 		if movePods <= 0 {
 			i++
 			continue
@@ -424,7 +425,7 @@ func filterNodesBelowIdealAvg(nodes []*v1.Node, sortedDomains []topology, topolo
 
 	var nodesBelowIdealAvg []*v1.Node
 	for _, domain := range sortedDomains {
-		if float64(len(domain.pods)) < math.Floor(idealAvg) {
+		if float64(len(domain.pods)) < idealAvg {
 			nodesBelowIdealAvg = append(nodesBelowIdealAvg, topologyNodesMap[domain.pair.value]...)
 		}
 	}
